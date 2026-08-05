@@ -1,0 +1,376 @@
+// Stillhere — Prisma Schema
+// MySQL 8.0+ via Hostinger
+// Prisma 6 with prisma-client generator
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum GenerationStatus {
+  ACTIVE
+  ENDING  // transitional lock state
+  ENDED
+}
+
+enum ContentStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+}
+
+enum ReactionTarget {
+  POST
+  REPLY
+}
+
+enum ReactionType {
+  UNDERSTAND
+  NOT_ALONE
+  THAT_HURT
+  NEED_CONTEXT
+  TELL_MORE
+  DISAGREE
+}
+
+enum ReportReason {
+  HARASSMENT
+  THREATS
+  PERSONAL_INFO
+  SEXUAL
+  HATE
+  SPAM
+  ILLEGAL
+  SELF_HARM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  ACTIONED
+  DISMISSED
+}
+
+enum NotificationType {
+  REPLY_TO_POST
+  REPLY_TO_REPLY
+  REACTION_ON_POST
+  REACTION_ON_REPLY
+}
+
+enum ModerationActionType {
+  HIDE_POST
+  RESTORE_POST
+  DELETE_POST
+  HIDE_REPLY
+  RESTORE_REPLY
+  DELETE_REPLY
+  DISMISS_REPORT
+  ACTION_REPORT
+}
+
+// ─── Admin ─────────────────────────────────────────────────────────────────
+
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+  actions      ModerationAction[]
+
+  @@map("admin_users")
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  adminId   String
+  tokenHash String    @unique // hashed session token
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([tokenHash])
+  @@map("admin_sessions")
+}
+
+// ─── Anonymous Devices ─────────────────────────────────────────────────────
+
+model AnonymousDevice {
+  id                        String    @id @default(cuid())
+  tokenHash                 String    @unique // SHA-256(rawToken + ANONYMOUS_IDENTITY_SECRET)
+  createdAt                 DateTime  @default(now())
+  lastSeenAt                DateTime  @default(now())
+  notificationsLastViewedAt DateTime?
+  cooldownPostAt            DateTime? // when post cooldown expires
+  cooldownReplyAt           DateTime? // when reply cooldown expires
+
+  posts         Post[]
+  replies       Reply[]
+  reactions     Reaction[]
+  notifications ActivityNotification[]
+  rateLimits    RateLimitRecord[]
+  reports       Report[]
+
+  @@index([tokenHash])
+  @@map("anonymous_devices")
+}
+
+// ─── Site Generations ──────────────────────────────────────────────────────
+
+model SiteGeneration {
+  id            Int              @id @default(autoincrement())
+  generationNum Int              @unique
+  status        GenerationStatus @default(ACTIVE)
+  startedAt     DateTime         @default(now())
+  endedAt       DateTime?
+  expiresAt     DateTime
+  saveCount     Int              @default(0)
+  postCount     Int              @default(0)   // aggregate (updated on end)
+  replyCount    Int              @default(0)   // aggregate (updated on end)
+  reactionCount Int              @default(0)   // aggregate (updated on end)
+  longestThreadMs BigInt?                       // ms duration of longest-lived thread
+  totalDurationMs BigInt?                       // ms total active duration
+  endReason     String?                         // "EXPIRED" | "MANUAL"
+
+  posts Post[]
+
+  @@map("site_generations")
+}
+
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+// ─── Posts ─────────────────────────────────────────────────────────────────
+
+model Post {
+  id                String        @id @default(cuid())
+  publicId          String        @unique // URL-safe slug, not the internal ID
+  generationId      Int
+  deviceId          String
+  content           String        @db.Text
+  status            ContentStatus @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  lastActivityAt    DateTime      @default(now())
+  expiresAt         DateTime
+  absoluteExpiresAt DateTime
+  savedWebsite      Boolean       @default(false)
+  replyCount        Int           @default(0)
+  reactionCount     Int           @default(0)
+
+  generation    SiteGeneration         @relation(fields: [generationId], references: [id], onDelete: Restrict)
+  device        AnonymousDevice        @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  replies       Reply[]
+  reactions     Reaction[]
+  notifications ActivityNotification[]
+  reports       Report[]
+
+  @@index([generationId, status, createdAt])
+  @@index([status, expiresAt])
+  @@index([status, lastActivityAt])
+  @@index([status, replyCount])
+  @@index([deviceId])
+  @@index([savedWebsite])
+  @@index([publicId])
+  @@map("posts")
+}
+
+// ─── Replies ───────────────────────────────────────────────────────────────
+
+model Reply {
+  id            String        @id @default(cuid())
+  publicId      String        @unique
+  postId        String
+  parentReplyId String?
+  deviceId      String
+  content       String        @db.Text
+  status        ContentStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  reactionCount Int           @default(0)
+
+  post         Post                   @relation(fields: [postId], references: [id], onDelete: Restrict)
+  parentReply  Reply?                 @relation("ReplyToReply", fields: [parentReplyId], references: [id], onDelete: SetNull)
+  childReplies Reply[]                @relation("ReplyToReply")
+  device       AnonymousDevice        @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  reactions    Reaction[]
+  notifications ActivityNotification[]
+  reports      Report[]
+
+  @@index([postId, status])
+  @@index([deviceId])
+  @@index([status])
+  @@index([parentReplyId])
+  @@map("replies")
+}
+
+// ─── Reactions ─────────────────────────────────────────────────────────────
+
+model Reaction {
+  id           String         @id @default(cuid())
+  deviceId     String
+  targetType   ReactionTarget
+  postId       String?
+  replyId      String?
+  reactionType ReactionType
+  createdAt    DateTime       @default(now())
+  hasExtended  Boolean        @default(false) // true after this reaction extended the thread once
+
+  device AnonymousDevice @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  post   Post?           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reply  Reply?          @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate reactions on same post by same device
+  @@unique([deviceId, postId, reactionType], name: "unique_post_reaction")
+  // Prevent duplicate reactions on same reply by same device
+  @@unique([deviceId, replyId, reactionType], name: "unique_reply_reaction")
+  @@index([postId])
+  @@index([replyId])
+  @@index([deviceId])
+  @@map("reactions")
+}
+
+// ─── Activity Notifications ────────────────────────────────────────────────
+
+model ActivityNotification {
+  id               String           @id @default(cuid())
+  recipientId      String           // device ID of the notification recipient
+  type             NotificationType
+  postId           String?          // root post for context
+  replyId          String?          // specific reply (for reply notifications)
+  triggerDeviceId  String?          // who triggered it (never shown publicly)
+  createdAt        DateTime         @default(now())
+  viewedAt         DateTime?
+
+  recipient AnonymousDevice @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  post      Post?           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reply     Reply?          @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, viewedAt])
+  @@index([postId])
+  @@index([replyId])
+  @@map("activity_notifications")
+}
+
+// ─── Reports ───────────────────────────────────────────────────────────────
+
+model Report {
+  id           String       @id @default(cuid())
+  deviceId     String
+  targetType   ReactionTarget // reusing POST | REPLY
+  postId       String?
+  replyId      String?
+  reason       ReportReason
+  note         String?      @db.VarChar(500)
+  status       ReportStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  reviewedAt   DateTime?
+
+  device AnonymousDevice @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  post   Post?           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reply  Reply?          @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  // One device can only report the same target+reason once
+  @@unique([deviceId, postId, reason], name: "unique_post_report")
+  @@unique([deviceId, replyId, reason], name: "unique_reply_report")
+  @@index([status, createdAt])
+  @@index([postId])
+  @@index([replyId])
+  @@map("reports")
+}
+
+// ─── Moderation Audit ──────────────────────────────────────────────────────
+
+model ModerationAction {
+  id         String               @id @default(cuid())
+  adminId    String
+  actionType ModerationActionType
+  targetType String               // "POST" | "REPLY" | "REPORT"
+  targetId   String
+  reason     String?              @db.VarChar(500)
+  createdAt  DateTime             @default(now())
+
+  // NOTE: No content text stored here — only IDs and types
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("moderation_actions")
+}
+
+// ─── Daily Themes ──────────────────────────────────────────────────────────
+
+model DailyTheme {
+  id        Int      @id @default(autoincrement())
+  text      String   @db.VarChar(500)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+  @@map("daily_themes")
+}
+
+// ─── Content Filtering ─────────────────────────────────────────────────────
+
+model BlockedTerm {
+  id        Int      @id @default(autoincrement())
+  pattern   String   @db.VarChar(500)
+  isRegex   Boolean  @default(false)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([active])
+  @@map("blocked_terms")
+}
+
+// ─── Rate Limiting ─────────────────────────────────────────────────────────
+
+model RateLimitRecord {
+  id          String   @id @default(cuid())
+  deviceId    String
+  action      String   // 'POST' | 'REPLY' | 'REACT' | 'REPORT'
+  windowStart DateTime // Start of the current window (hour for hourly, minute for per-minute)
+  count       Int      @default(1)
+  lastAt      DateTime @default(now())
+
+  device AnonymousDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, action, windowStart])
+  @@index([windowStart]) // for cleanup
+  @@map("rate_limit_records")
+}
+
+// ─── Cleanup Runs ──────────────────────────────────────────────────────────
+
+model CleanupRun {
+  id                String   @id @default(cuid())
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+  generationEnded   Boolean  @default(false)
+  postsDeleted      Int      @default(0)
+  repliesDeleted    Int      @default(0)
+  reactionsDeleted  Int      @default(0)
+  notificationsClean Int     @default(0)
+  rateLimitsCleaned Int      @default(0)
+  error             String?  @db.Text
+
+  @@index([startedAt])
+  @@map("cleanup_runs")
+}
