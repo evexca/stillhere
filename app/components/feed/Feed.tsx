@@ -6,8 +6,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { PostCard, type PostData } from './PostCard';
 import { PostComposer } from './PostComposer';
-import { AdPlaceholder } from './AdPlaceholder';
-import { SITE_CONFIG } from '../../config/site';
+import { AdSlot } from '../ads/AdSlot';
+import { shouldInsertAdAfter } from '../../lib/ads';
 
 type FeedFilter = 'LIVE' | 'DISCUSSED' | 'DISAPPEARING';
 
@@ -175,10 +175,7 @@ export function Feed({ initialPosts, initialCursor, todayTheme, generationExpire
           {posts.map((post, index) => (
             <div key={post.publicId}>
               <PostCard post={post} />
-              {/* Ad after every 20 posts */}
-              {SITE_CONFIG.adsEnabled && (index + 1) % 20 === 0 && (
-                <AdPlaceholder />
-              )}
+              {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
             </div>
           ))}
         </div>

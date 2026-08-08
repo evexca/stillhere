@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { GlobalCountdown } from '@/components/countdown/GlobalCountdown';
 import { Feed } from '@/components/feed/Feed';
+import { PageAdRail } from '@/components/ads/PageAdRail';
 import { getActiveGeneration } from '@/services/generation';
 import { getTodayTheme } from '@/services/theme';
 import { prisma } from '@/lib/prisma';
@@ -110,25 +111,27 @@ export default async function HomePage() {
       </header>
 
       {/* Feed */}
-      <div className="container page-body" style={{ paddingTop: '0' }}>
-        <Suspense fallback={
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="skeleton-card">
-                <div className="skeleton" style={{ width: 70, height: 14 }} />
-                <div className="skeleton" style={{ width: '100%', height: 64 }} />
-              </div>
-            ))}
-          </div>
-        }>
-          <Feed
-            initialPosts={posts}
-            initialCursor={nextCursor}
-            todayTheme={theme?.text ?? null}
-            generationExpiresAt={generation.expiresAt.toISOString()}
-          />
-        </Suspense>
-      </div>
+      <PageAdRail>
+        <div className="container page-body" style={{ paddingTop: '0' }}>
+          <Suspense fallback={
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="skeleton-card">
+                  <div className="skeleton" style={{ width: 70, height: 14 }} />
+                  <div className="skeleton" style={{ width: '100%', height: 64 }} />
+                </div>
+              ))}
+            </div>
+          }>
+            <Feed
+              initialPosts={posts}
+              initialCursor={nextCursor}
+              todayTheme={theme?.text ?? null}
+              generationExpiresAt={generation.expiresAt.toISOString()}
+            />
+          </Suspense>
+        </div>
+      </PageAdRail>
     </>
   );
 }

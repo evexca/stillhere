@@ -7,6 +7,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { PostCard, type PostData } from '../feed/PostCard';
 import { ReplyComposer } from './ReplyComposer';
 import { ReplyCard } from './ReplyCard';
+import { AdSlot } from '../ads/AdSlot';
+import { shouldInsertAdAfter } from '../../lib/ads';
 
 export interface ReplyData {
   publicId: string;
@@ -120,15 +122,17 @@ export function ThreadView({ post }: ThreadViewProps) {
         </p>
       ) : (
         <div aria-label={`${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}>
-          {replies.map((reply) => (
-            <ReplyCard
-              key={reply.publicId}
-              reply={reply}
-              postPublicId={post.publicId}
-              onReply={setReplyingTo}
-              replyingTo={replyingTo}
-              onReplyCreated={handleReplyCreated}
-            />
+          {replies.map((reply, index) => (
+            <div key={reply.publicId}>
+              <ReplyCard
+                reply={reply}
+                postPublicId={post.publicId}
+                onReply={setReplyingTo}
+                replyingTo={replyingTo}
+                onReplyCreated={handleReplyCreated}
+              />
+              {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
+            </div>
           ))}
         </div>
       )}

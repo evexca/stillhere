@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
+import { PageAdRail } from '@/components/ads/PageAdRail';
+import { AdSlot } from '@/components/ads/AdSlot';
+import { shouldInsertAdAfter } from '@/lib/ads';
 
 export const metadata: Metadata = {
   title: 'Graveyard — Stillhere',
@@ -48,6 +51,7 @@ export default async function GraveyardPage() {
   }
 
   return (
+    <PageAdRail>
     <div className="container page-body">
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.75rem, 5vw, 2.5rem)', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.75rem' }}>
@@ -104,8 +108,9 @@ export default async function GraveyardPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {generations.map((gen) => (
-            <div key={gen.id} className="graveyard-card">
+          {generations.map((gen, index) => (
+            <div key={gen.id}>
+            <div className="graveyard-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
                 <div>
                   <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.25rem' }}>
@@ -154,9 +159,12 @@ export default async function GraveyardPage() {
                 </div>
               </div>
             </div>
+            {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
+            </div>
           ))}
         </div>
       )}
     </div>
+    </PageAdRail>
   );
 }

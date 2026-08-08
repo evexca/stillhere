@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { MyActivityClient } from '@/components/activity/MyActivityClient';
+import { PageAdRail } from '@/components/ads/PageAdRail';
 
 export const metadata: Metadata = {
   title: 'My Activity — Stillhere',
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 
 export default function MyActivityPage() {
   return (
+    <PageAdRail>
     <div className="container page-body">
       <h1 style={{
         fontFamily: 'var(--font-display)',
@@ -23,5 +25,6 @@ export default function MyActivityPage() {
       </p>
       <MyActivityClient />
     </div>
+    </PageAdRail>
   );
 }

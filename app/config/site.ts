@@ -33,9 +33,6 @@ export const SITE_CONFIG = {
   nightModeStartHour: parseInt(process.env.NIGHT_MODE_START_HOUR ?? '19', 10),
   nightModeEndHour: parseInt(process.env.NIGHT_MODE_END_HOUR ?? '7', 10),
 
-  // Feature flags
-  adsEnabled: process.env.ADS_ENABLED === 'true',
-
   // Pagination
   feedPageSize: 20,
 

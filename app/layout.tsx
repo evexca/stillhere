@@ -4,6 +4,7 @@ import { SITE_CONFIG } from '@/config/site';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navigation } from '@/components/layout/Navigation';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { AdSenseScript } from '@/components/ads/AdSenseScript';
 
 export const metadata: Metadata = {
   title: {
@@ -66,6 +67,7 @@ export default function RootLayout({
             `.trim(),
           }}
         />
+        <AdSenseScript />
       </head>
       <body>
         <ThemeProvider>

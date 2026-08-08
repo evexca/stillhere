@@ -64,7 +64,10 @@ Set these in Hostinger's Node.js app environment-variable panel (hPanel → Webs
 | `MAX_REACTION_CHANGES_PER_MINUTE` | `10` | |
 | `NIGHT_MODE_START_HOUR` | `19` | |
 | `NIGHT_MODE_END_HOUR` | `7` | |
-| `ADS_ENABLED` | `false` | |
+| `NEXT_PUBLIC_ADSENSE_CLIENT_ID` | `ca-pub-1012049652296233` | Real publisher ID |
+| `NEXT_PUBLIC_ADSENSE_SIDEBAR_LEFT_SLOT` | *(leave blank until slot created)* | That placement renders nothing until set |
+| `NEXT_PUBLIC_ADSENSE_SIDEBAR_RIGHT_SLOT` | *(leave blank until slot created)* | That placement renders nothing until set |
+| `NEXT_PUBLIC_ADSENSE_INFEED_SLOT` | *(leave blank until slot created)* | That placement renders nothing until set |
 | `MODERATION_API_URL` | *(leave blank)* | Not used in MVP |
 | `MODERATION_API_KEY` | *(leave blank)* | Not used in MVP |
 | `SUPPORT_EMAIL` | `support@yourdomain.com` | |

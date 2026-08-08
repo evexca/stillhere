@@ -5,6 +5,8 @@
  */
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { AdSlot } from '@/components/ads/AdSlot';
+import { shouldInsertAdAfter } from '@/lib/ads';
 
 type ActivityTab = 'posts' | 'replies' | 'notifications' | 'reactions' | 'disappearing';
 
@@ -189,15 +191,18 @@ export function MyActivityClient() {
       <div id="tab-panel-posts" role="tabpanel" aria-labelledby="tab-posts" hidden={tab !== 'posts'}>
         {data.myPosts.length === 0 ? (
           <EmptyTab message="You haven't posted in this generation yet." />
-        ) : data.myPosts.map((post) => (
-          <div key={post.publicId} style={{ marginBottom: '0.75rem' }}>
-            <ContentPreview content={post.content} link={`/post/${post.publicId}`} />
-            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '-0.5rem', marginBottom: '0.75rem', paddingLeft: '0.25rem' }}>
-              {post.savedWebsite && <span style={{ color: 'var(--color-accent)' }}>✦ Saved the website</span>}
-              <span>{post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}</span>
-              <span>{post.reactionCount} reactions</span>
-              <span>{formatExpiresIn(post.expiresAt)}</span>
+        ) : data.myPosts.map((post, index) => (
+          <div key={post.publicId}>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <ContentPreview content={post.content} link={`/post/${post.publicId}`} />
+              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '-0.5rem', marginBottom: '0.75rem', paddingLeft: '0.25rem' }}>
+                {post.savedWebsite && <span style={{ color: 'var(--color-accent)' }}>✦ Saved the website</span>}
+                <span>{post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}</span>
+                <span>{post.reactionCount} reactions</span>
+                <span>{formatExpiresIn(post.expiresAt)}</span>
+              </div>
             </div>
+            {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
           </div>
         ))}
       </div>
@@ -205,8 +210,11 @@ export function MyActivityClient() {
       <div id="tab-panel-replies" role="tabpanel" aria-labelledby="tab-replies" hidden={tab !== 'replies'}>
         {data.myReplies.length === 0 ? (
           <EmptyTab message="You haven't replied to anything yet." />
-        ) : data.myReplies.map((reply) => (
-          <ContentPreview key={reply.publicId} content={reply.content} link={`/post/${reply.postPublicId}`} />
+        ) : data.myReplies.map((reply, index) => (
+          <div key={reply.publicId}>
+            <ContentPreview content={reply.content} link={`/post/${reply.postPublicId}`} />
+            {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
+          </div>
         ))}
       </div>
 
@@ -215,27 +223,33 @@ export function MyActivityClient() {
           <EmptyTab message="No activity on your posts or replies yet." />
         ) : (
           <>
-            {data.repliesToMyPosts.slice(0, 10).map((n) => (
-              <Link key={n.publicId} href={`/post/${n.postPublicId}`} style={{ display: 'block', padding: '0.875rem 1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', marginBottom: '0.75rem' }}>
-                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
-                  Someone replied to your post · {formatRelativeTime(n.createdAt)}
-                </p>
-                <p style={{ fontSize: '0.9375rem', color: 'var(--color-text)', wordBreak: 'break-word' }}>
-                  {n.content.slice(0, 200)}{n.content.length > 200 ? '…' : ''}
-                </p>
-              </Link>
-            ))}
-            {data.reactionsReceived.slice(0, 10).map((n) => (
-              <Link key={n.notifId} href={`/post/${n.postPublicId}`} style={{ display: 'block', padding: '0.875rem 1rem', background: 'var(--color-surface)', border: `1px solid ${n.viewed ? 'var(--color-border)' : 'var(--color-accent)'}`, borderRadius: 'var(--radius-lg)', marginBottom: '0.75rem' }}>
-                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
-                  Someone reacted to your {n.type.includes('REPLY') ? 'reply' : 'post'} · {formatRelativeTime(n.createdAt)}
-                </p>
-                {n.postContent && (
-                  <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                    {n.postContent.slice(0, 100)}{n.postContent.length > 100 ? '…' : ''}
+            {data.repliesToMyPosts.slice(0, 10).map((n, index) => (
+              <div key={n.publicId}>
+                <Link href={`/post/${n.postPublicId}`} style={{ display: 'block', padding: '0.875rem 1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', marginBottom: '0.75rem' }}>
+                  <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                    Someone replied to your post · {formatRelativeTime(n.createdAt)}
                   </p>
-                )}
-              </Link>
+                  <p style={{ fontSize: '0.9375rem', color: 'var(--color-text)', wordBreak: 'break-word' }}>
+                    {n.content.slice(0, 200)}{n.content.length > 200 ? '…' : ''}
+                  </p>
+                </Link>
+                {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
+              </div>
+            ))}
+            {data.reactionsReceived.slice(0, 10).map((n, index) => (
+              <div key={n.notifId}>
+                <Link href={`/post/${n.postPublicId}`} style={{ display: 'block', padding: '0.875rem 1rem', background: 'var(--color-surface)', border: `1px solid ${n.viewed ? 'var(--color-border)' : 'var(--color-accent)'}`, borderRadius: 'var(--radius-lg)', marginBottom: '0.75rem' }}>
+                  <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                    Someone reacted to your {n.type.includes('REPLY') ? 'reply' : 'post'} · {formatRelativeTime(n.createdAt)}
+                  </p>
+                  {n.postContent && (
+                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                      {n.postContent.slice(0, 100)}{n.postContent.length > 100 ? '…' : ''}
+                    </p>
+                  )}
+                </Link>
+                {shouldInsertAdAfter(data.repliesToMyPosts.slice(0, 10).length + index) && <AdSlot variant="inFeed" />}
+              </div>
             ))}
           </>
         )}
@@ -244,9 +258,12 @@ export function MyActivityClient() {
       <div id="tab-panel-reactions" role="tabpanel" aria-labelledby="tab-reactions" hidden={tab !== 'reactions'}>
         {data.threadsReacted.length === 0 ? (
           <EmptyTab message="You haven't reacted to any posts yet." />
-        ) : data.threadsReacted.map((t) => (
+        ) : data.threadsReacted.map((t, index) => (
           t.publicId && (
-            <ContentPreview key={t.publicId} content={t.content ?? '(content removed)'} link={`/post/${t.publicId}`} />
+            <div key={t.publicId}>
+              <ContentPreview content={t.content ?? '(content removed)'} link={`/post/${t.publicId}`} />
+              {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
+            </div>
           )
         ))}
       </div>
@@ -254,12 +271,15 @@ export function MyActivityClient() {
       <div id="tab-panel-disappearing" role="tabpanel" aria-labelledby="tab-disappearing" hidden={tab !== 'disappearing'}>
         {data.disappearingSoon.length === 0 ? (
           <EmptyTab message="None of your posts are disappearing soon." />
-        ) : data.disappearingSoon.map((p) => (
-          <div key={p.publicId} style={{ marginBottom: '0.75rem' }}>
-            <ContentPreview content={p.content} link={`/post/${p.publicId}`} />
-            <p style={{ fontSize: '0.8125rem', color: 'var(--color-warning)', fontWeight: 600, marginTop: '-0.5rem', marginBottom: '0.75rem', paddingLeft: '0.25rem' }}>
-              ⚠ {formatExpiresIn(p.expiresAt)}
-            </p>
+        ) : data.disappearingSoon.map((p, index) => (
+          <div key={p.publicId}>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <ContentPreview content={p.content} link={`/post/${p.publicId}`} />
+              <p style={{ fontSize: '0.8125rem', color: 'var(--color-warning)', fontWeight: 600, marginTop: '-0.5rem', marginBottom: '0.75rem', paddingLeft: '0.25rem' }}>
+                ⚠ {formatExpiresIn(p.expiresAt)}
+              </p>
+            </div>
+            {shouldInsertAdAfter(index) && <AdSlot variant="inFeed" />}
           </div>
         ))}
       </div>

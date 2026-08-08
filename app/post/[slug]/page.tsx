@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { ThreadView } from '@/components/thread/ThreadView';
+import { PageAdRail } from '@/components/ads/PageAdRail';
 import { SITE_CONFIG } from '@/config/site';
 
 export const dynamic = 'force-dynamic';
@@ -101,8 +102,10 @@ export default async function ThreadPage({ params }: PageProps) {
   };
 
   return (
-    <div className="container page-body">
-      <ThreadView post={postData} />
-    </div>
+    <PageAdRail>
+      <div className="container page-body">
+        <ThreadView post={postData} />
+      </div>
+    </PageAdRail>
   );
 }
