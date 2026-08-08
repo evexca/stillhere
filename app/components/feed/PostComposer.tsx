@@ -102,6 +102,7 @@ export function PostComposer({ todayTheme, onPostCreated }: PostComposerProps) {
       if (data.post && onPostCreated) {
         onPostCreated(data.post);
       }
+      window.dispatchEvent(new Event('stillhere:generation-refresh'));
       showToast('Your post is live. It saved the website. ✦', 'success');
       textareaRef.current?.focus();
     } catch {

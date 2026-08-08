@@ -75,6 +75,12 @@ export function GlobalCountdown({ initialExpiresAt }: CountdownProps) {
     return () => clearInterval(interval);
   }, [syncWithServer]);
 
+  // Re-sync immediately when a new post resets the generation countdown
+  useEffect(() => {
+    window.addEventListener('stillhere:generation-refresh', syncWithServer);
+    return () => window.removeEventListener('stillhere:generation-refresh', syncWithServer);
+  }, [syncWithServer]);
+
   // Tick every second
   useEffect(() => {
     const tick = () => {
