@@ -37,14 +37,25 @@ export function AdSlot({ variant }: { variant: AdVariant }) {
 
   return (
     <div className={VARIANT_CLASS[variant]} aria-label="Advertisement">
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client={ADSENSE_CLIENT_ID}
-        data-ad-slot={slot}
-        data-ad-format={variant === 'inFeed' ? 'fluid' : 'auto'}
-        data-full-width-responsive="true"
-      />
+      {variant === 'inFeed' ? (
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client={ADSENSE_CLIENT_ID}
+          data-ad-slot={slot}
+          data-ad-format="fluid"
+          data-ad-layout-key="-gw-3+1f-3d+2z"
+        />
+      ) : (
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client={ADSENSE_CLIENT_ID}
+          data-ad-slot={slot}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      )}
     </div>
   );
 }
