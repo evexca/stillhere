@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { Navigation } from '@/components/layout/Navigation';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { AdSenseScript } from '@/components/ads/AdSenseScript';
+import { ADSENSE_CLIENT_ID } from '@/components/ads/config';
 
 export const metadata: Metadata = {
   title: {
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
   },
   description: SITE_CONFIG.socialDescription,
   metadataBase: new URL(SITE_CONFIG.appUrl),
+  verification: ADSENSE_CLIENT_ID
+    ? { other: { 'google-adsense-account': ADSENSE_CLIENT_ID } }
+    : undefined,
   openGraph: {
     type: 'website',
     siteName: SITE_CONFIG.name,
